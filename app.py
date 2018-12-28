@@ -5,6 +5,7 @@ from PyPDF2 import PdfFileReader, PdfFileWriter
 from base64 import b64encode, encodebytes, encodestring
 from werkzeug.datastructures import FileStorage
 import os
+import json
 
 app = Flask(__name__)
 PASSWORD = '123456'
@@ -47,14 +48,22 @@ class PDF_Files(Resource):
 
     
     def get(self):
+         data={}
          with open('ResumendeTarjetas.pdf', 'rb') as file:             
-             data=  FileStorage(file).read()
-             print(data)
-         return jsonify(encodestring(data).decode('ascii'))
+             #data=  FileStorage(file).read()
+             data['filename'] = 'ResumendeTarjetas.pdf'
+             file_read= file.read()
+         file_64_encode = encodebytes(file_read)         
+         data['data'] = file_64_encode.decode('ascii')          
+
+         final_data = json.dumps(data)
+         final_data = json.loads(final_data)
+
+         return final_data
         
 
 api.add_resource(PDF_Files,'/pdf')
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)
