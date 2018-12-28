@@ -49,9 +49,9 @@ class PDF_Files(Resource):
     
     def get(self):
          data={}
-         with open('ResumendeTarjetas.pdf', 'rb') as file:             
+         with open('encrypted_Eldridge. Willie P. TX-EB-SIGNED.pdf', 'rb') as file:             
              #data=  FileStorage(file).read()
-             data['filename'] = 'ResumendeTarjetas.pdf'
+             data['filename'] = 'encrypted_Eldridge. Willie P. TX-EB-SIGNED.pdf'
              file_read= file.read()
          file_64_encode = encodebytes(file_read)         
          data['data'] = file_64_encode.decode('ascii')          
