@@ -4,9 +4,12 @@ from flask_restful  import Resource, Api
 from PyPDF2 import PdfFileReader, PdfFileWriter
 from base64 import b64encode, encodebytes, encodestring
 from werkzeug.datastructures import FileStorage
+import os
 
 app = Flask(__name__)
 PASSWORD = '123456'
+
+
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 wsgi_app = app.wsgi_app
 
@@ -53,10 +56,5 @@ class PDF_Files(Resource):
 api.add_resource(PDF_Files,'/pdf')
 
 if __name__ == '__main__':
-    import os
-    HOST = os.environ.get('SERVER_HOST', 'localhost')
-    try:
-        PORT = int(os.environ.get('SERVER_PORT', '5555'))
-    except ValueError:
-        PORT = 5555
-    app.run(HOST, 5555, True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
