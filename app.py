@@ -1,13 +1,14 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template,flash
 from json import dumps
 from flask_restful  import Resource, Api
 from PyPDF2 import PdfFileReader, PdfFileWriter
 from base64 import b64encode, encodebytes, encodestring
-from werkzeug.datastructures import FileStorage
 import os
 import json
+from wtforms import Form, TextField, TextAreaField, validators, StringField, SubmitField
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = '7d441f27d441f27567d441f2b6176a'
 PASSWORD = '123456'
 
 
@@ -16,9 +17,18 @@ wsgi_app = app.wsgi_app
 
 api = Api(app)
 
-@app.route('/')
+class ReusableForm(Form):
+    name = TextField('Name:', validators=[validators.required()])    
+    password = TextField('Password:', validators=[validators.required(), validators.Length(min=3, max=35)])
+
+
+@app.route('/', methods=['GET', 'POST'])
 def home():
-   return render_template('home.html')
+    form = ReusableForm(request.form)    
+    if request.method == 'POST':
+        name=request.form['name']
+        password=request.form['password']                
+    return render_template('home.html', form=form)
 
 
 class PDF_Files(Resource):
@@ -49,8 +59,7 @@ class PDF_Files(Resource):
     
     def get(self):
          data={}
-         with open('encrypted_Eldridge. Willie P. TX-EB-SIGNED.pdf', 'rb') as file:             
-             #data=  FileStorage(file).read()
+         with open('encrypted_Eldridge. Willie P. TX-EB-SIGNED.pdf', 'rb') as file:                          
              data['filename'] = 'encrypted_Eldridge. Willie P. TX-EB-SIGNED.pdf'
              file_read= file.read()
          file_64_encode = encodebytes(file_read)         
