@@ -1,4 +1,5 @@
 flask
 flask_restful
 PyPDF2
+flask_wtf
 wtforms

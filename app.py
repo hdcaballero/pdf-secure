@@ -1,15 +1,25 @@
-from flask import Flask, request, jsonify, render_template,flash
+from flask import Flask, request, jsonify, render_template,flash, redirect, url_for
 from json import dumps
 from flask_restful  import Resource, Api
 from PyPDF2 import PdfFileReader, PdfFileWriter
 from base64 import b64encode, encodebytes, encodestring
+from werkzeug.utils import secure_filename
 import os
 import json
-from wtforms import Form, TextField, TextAreaField, validators, StringField, SubmitField
+from flask_wtf import FlaskForm 
+from wtforms import TextField, validators, ValidationError, PasswordField
+from flask_wtf.file import FileField, FileRequired
 
 app = Flask(__name__)
+
+ALLOWED_EXTENSIONS = set(['pdf'])
+UPLOAD_FOLDER =  os.path.dirname(os.path.realpath('__file__'))
+UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'static')
+UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'uploads')
+
+
 app.config['SECRET_KEY'] = '7d441f27d441f27567d441f2b6176a'
-PASSWORD = '123456'
+app.config['UPLOAD_FOLDER'] = '/uploads'
 
 
 # Make the WSGI interface available at the top level so wfastcgi can get it.
@@ -17,45 +27,46 @@ wsgi_app = app.wsgi_app
 
 api = Api(app)
 
-class ReusableForm(Form):
-    name = TextField('Name:', validators=[validators.required()])    
-    password = TextField('Password:', validators=[validators.required(), validators.Length(min=3, max=35)])
+class UploadForm(FlaskForm):     
+    password = PasswordField(label ='Password:', validators=[validators.required(), validators.Length(min=3, max=35)])
+    uploaded_file =  FileField(validators=[FileRequired()])
 
 
 @app.route('/', methods=['GET', 'POST'])
-def home():
-    form = ReusableForm(request.form)    
-    if request.method == 'POST':
-        name=request.form['name']
-        password=request.form['password']                
-    return render_template('home.html', form=form)
+def upload():
+    form = UploadForm(request.form)    
+        
+    if request.method == "POST":                
+        file_url=encrypt_file(request.files['uploaded_file'], request.form['password']  )      
+        print(request.form['password']  )
+    else:
+        file_url = None
+    return render_template('home.html', form=form, file_url=file_url)
 
 
 class PDF_Files(Resource):
-    def post(self):
-        print('this is the JSON request')
-        print(request.files)
-        print(request.json)
-        if 'file' not in request.files:
+    def post(self):                
+        print(request.form['password']  )
+        data={}
+        if 'uploaded_file' not in request.files:
             print('No file part')
         else:
             print('file part found')         
-        file = request.files['file']         
-        file.save(os.path.join( file.filename))        
+        file = request.files['uploaded_file']         
+        #file.save(os.path.join( file.filename))        
         result = {'status':'success'}
-        pdf_reader = PdfFileReader(file)
-        pdf_writer = PdfFileWriter()        
- 
-        for page in range(pdf_reader.getNumPages()):
-            pdf_writer.addPage(pdf_reader.getPage(page))
- 
-        pdf_writer.encrypt(user_pwd=PASSWORD, owner_pwd=None,use_128bit=True)
-        with open('encrypted_' + file.filename, 'wb') as fh:
-            pdf_writer.write(fh)
-        #return jsonify(result)
-        #return jsonify({'pdf': b64encode(file.read())})
-        return jsonify(encodestring(file.read()).decode('ascii'))
+        encrypt_file(file, request.form['password'] )
 
+        with open('encrypted_'+ file.filename, 'rb') as encrypted_file:      
+            data['filename'] = 'encrypted_'+ file.filename
+            file_read= encrypted_file.read()
+        
+        file_64_encode = encodebytes(file_read)         
+        data['data'] = file_64_encode.decode('ascii')          
+
+        final_data = json.dumps(data)
+        final_data = json.loads(final_data)
+        return final_data
     
     def get(self):
          data={}
@@ -70,8 +81,24 @@ class PDF_Files(Resource):
 
          return final_data
         
-
+def encrypt_file(file, password):
+    pdf_reader = PdfFileReader(file)
+    pdf_writer = PdfFileWriter()        
+ 
+    for page in range(pdf_reader.getNumPages()):
+        pdf_writer.addPage(pdf_reader.getPage(page))
+ 
+    pdf_writer.encrypt(user_pwd=password, owner_pwd=None,use_128bit=True)
+    file_location = os.path.join(UPLOAD_FOLDER, 'encrypted_' + file.filename)
+    with open(file_location , 'wb') as fh:
+        pdf_writer.write(fh)
+    return url_for('static', filename= 'uploads/encrypted_' + file.filename)   
 api.add_resource(PDF_Files,'/pdf')
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
