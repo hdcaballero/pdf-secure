@@ -13,10 +13,9 @@ from flask_wtf.file import FileField, FileRequired
 app = Flask(__name__)
 
 ALLOWED_EXTENSIONS = set(['pdf'])
-UPLOAD_FOLDER =  os.path.dirname(os.path.realpath('__file__'))
+UPLOAD_FOLDER =  os.path.dirname('__file__')
 UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'static')
 UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'uploads')
-
 
 app.config['SECRET_KEY'] = '7d441f27d441f27567d441f2b6176a'
 app.config['UPLOAD_FOLDER'] = '/uploads'
@@ -35,7 +34,7 @@ class UploadForm(FlaskForm):
 @app.route('/', methods=['GET', 'POST'])
 def upload():
     form = UploadForm(request.form)    
-        
+    print(UPLOAD_FOLDER)    
     if request.method == "POST":                
         file_url=encrypt_file(request.files['uploaded_file'], request.form['password']  )      
         print(request.form['password']  )
@@ -97,7 +96,6 @@ api.add_resource(PDF_Files,'/pdf')
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 
 if __name__ == '__main__':
