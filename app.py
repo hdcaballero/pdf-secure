@@ -107,7 +107,7 @@ def allowed_file(filename):
 
 def save_log(filename,filesize):
     now = datetime.datetime.now()
-    f = open("encryptLog.txt", "a")
+    f = open("static/uploads/encryptLog.txt", "a")
     f.write('\n' + now.strftime("%x") + ' ' + now.strftime("%X") + ' - ' + filename + ' - ' + filesize + ' - '+ getIp())
     return ''
 
