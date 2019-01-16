@@ -6,6 +6,8 @@ from base64 import b64encode, encodebytes, encodestring
 from werkzeug.utils import secure_filename
 import os
 import json
+import socket
+import datetime
 from flask_wtf import FlaskForm 
 from wtforms import TextField, validators, ValidationError, PasswordField
 from flask_wtf.file import FileField, FileRequired
@@ -84,6 +86,8 @@ def encrypt_file(file, password):
     pdf_reader = PdfFileReader(file)
     pdf_writer = PdfFileWriter()        
  
+    
+
     for page in range(pdf_reader.getNumPages()):
         pdf_writer.addPage(pdf_reader.getPage(page))
  
@@ -91,12 +95,28 @@ def encrypt_file(file, password):
     file_location = os.path.join(UPLOAD_FOLDER, 'encrypted_' + file.filename)
     with open(file_location , 'wb') as fh:
         pdf_writer.write(fh)
-    return url_for('static', filename= 'uploads/encrypted_' + file.filename)   
+    a = os.path.getsize(file_location)
+    save_log(file.filename,str(a))
+    return url_for('static', filename= 'uploads/encrypted_' + file.filename)  
+    
+ 
 api.add_resource(PDF_Files,'/pdf')
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def save_log(filename,filesize):
+    now = datetime.datetime.now()
+    f = open("encryptLog.txt", "a")
+    f.write('\n' + now.strftime("%x") + ' ' + now.strftime("%X") + ' - ' + filename + ' - ' + filesize + ' - '+ getIp())
+    return ''
+
+
+
+def getIp():
+    nameeqp = socket.gethostname()
+    ipeqp = socket.gethostbyname(nameeqp)
+    return ipeqp
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
